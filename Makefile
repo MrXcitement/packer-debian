@@ -1,9 +1,15 @@
 VAGRANT_CLOUD_USERNAME ?= mrbarker
+VERSION := 1.0.$(shell date +%s)
+PUBLISH_OPTIONS := "--force"
 
-.PHONY: install-boxes install-box-amd64-virtualbox install-box-i386-virtualbox install-box-amd64-vmware install-box-i386-vmware
+.PHONY: install-boxes install-boxes-amd64 install-boxes-i386 install-box-amd64-virtualbox install-box-i386-virtualbox install-box-amd64-vmware install-box-i386-vmware
 all: install-boxes
 
-install-boxes: install-box-amd64-virtualbox install-box-i386-virtualbox install-box-amd64-vmware install-box-i386-vmware
+install-boxes: install-boxes-amd64 install-boxes-i386
+
+install-boxes-amd64: install-box-amd64-virtualbox install-box-amd64-vmware
+
+install-boxes-i386: install-box-i386-virtualbox install-box-i386-vmware
 
 install-box-amd64-virtualbox: debian-amd64-virtualbox.box
 	vagrant box add -f --name $(VAGRANT_CLOUD_USERNAME)/debian-amd64 --provider virtualbox debian-amd64-virtualbox.box
@@ -28,6 +34,25 @@ debian-amd64-vmware.box: debian-amd64.json http/p *.sh
 
 debian-i386-vmware.box: debian-i386.json http/p *.sh
 	PACKER_LOG=1 packer build -force -only vmware-iso debian-i386.json
+
+.PHONY: publish-boxes publish-boxes-amd64 publish-boxes-i386 publish-box-amd64-virtualbox publish-box-i386-virtualbox publish-box-amd64-vmware publish-box-i386-vmware
+publish-boxes: publish-boxes-amd64 publish-boxes-i386
+
+publish-boxes-amd64: publish-box-amd64-virtualbox publish-box-amd64-vmware
+
+publish-boxes-i386: publish-box-i386-virtualbox publish-box-i386-vmware
+
+publish-box-amd64-virtualbox: debian-amd64-virtualbox.box
+	vagrant cloud publish $(VAGRANT_CLOUD_USERNAME)/debian-amd64 $(VERSION) virtualbox ./debian-amd64-virtualbox.box $(PUBLISH_OPTIONS)
+
+publish-box-amd64-vmware: debian-amd64-vmware.box
+	vagrant cloud publish $(VAGRANT_CLOUD_USERNAME)/debian-amd64 $(VERSION) vmware_desktop ./debian-amd64-vmware.box $(PUBLISH_OPTIONS)
+
+publish-box-i386-virtualbox: debian-i386-virtualbox.box
+	vagrant cloud publish $(VAGRANT_CLOUD_USERNAME)/debian-i386 $(VERSION) virtualbox ./debian-i386-virtualbox.box $(PUBLISH_OPTIONS)
+
+publish-box-i386-vmware: debian-i386-vmware.box
+	vagrant cloud publish $(VAGRANT_CLOUD_USERNAME)/debian-i386 $(VERSION) vmware_desktop ./debian-i386-vmware.box $(PUBLISH_OPTIONS)
 
 .PHONY: clean clean-boxes clean-vagrant clean-artifacts
 clean: clean-boxes clean-vagrant clean-artifacts
